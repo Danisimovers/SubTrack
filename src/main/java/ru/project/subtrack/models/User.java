@@ -36,18 +36,18 @@ public class User {
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
-    @Column(nullable = false)
+    @Column()
     private LocalDateTime updatedAt;
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Subscription> subscriptions = new ArrayList<>();
+    private List<Subscription> subscriptions;
 
     // Метод для автоматической установки времени
     @PrePersist
     public void prePersist() {
         LocalDateTime now = LocalDateTime.now();
         createdAt = now;
-        updatedAt = now;
+        updatedAt = null;
     }
 
     // Метод для обновления времени при изменении сущности

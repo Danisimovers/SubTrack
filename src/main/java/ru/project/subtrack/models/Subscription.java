@@ -33,7 +33,7 @@ public class Subscription {
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt; // Дата создания
 
-    @Column(nullable = false)
+    @Column()
     private LocalDateTime updatedAt; // Дата последнего обновления
 
     // Метод для автоматического установления времени при создании подписки
@@ -41,6 +41,7 @@ public class Subscription {
     public void prePersist() {
         LocalDateTime now = LocalDateTime.now();
         createdAt = now;
+        updatedAt = null;
     }
 
     // Метод для обновления времени при изменении подписки
