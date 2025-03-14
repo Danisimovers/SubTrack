@@ -4,7 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDateTime;
 import java.util.UUID;
-
+@Builder
 @Entity
 @Table(name = "subscriptions")
 @Getter
@@ -41,7 +41,7 @@ public class Subscription {
     public void prePersist() {
         LocalDateTime now = LocalDateTime.now();
         createdAt = now;
-        updatedAt = null;
+        updatedAt = now;
     }
 
     // Метод для обновления времени при изменении подписки
