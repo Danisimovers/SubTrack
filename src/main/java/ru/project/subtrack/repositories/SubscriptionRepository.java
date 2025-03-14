@@ -10,4 +10,6 @@ import java.util.UUID;
 public interface SubscriptionRepository extends JpaRepository<Subscription, UUID> {
 
     Optional<Subscription> findById(UUID subscriptionId);
+    List<Subscription> findByUserId(UUID userId);
+
 }

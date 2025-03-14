@@ -6,7 +6,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
-
+@Builder
 @Entity
 @Table(name = "users")
 @Getter
@@ -40,14 +40,15 @@ public class User {
     private LocalDateTime updatedAt;
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Subscription> subscriptions;
+    private List<Subscription> subscriptions = new ArrayList<>();
+
 
     // Метод для автоматической установки времени
     @PrePersist
     public void prePersist() {
         LocalDateTime now = LocalDateTime.now();
         createdAt = now;
-        updatedAt = null;
+        updatedAt = now;
     }
 
     // Метод для обновления времени при изменении сущности
