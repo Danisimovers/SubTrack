@@ -2,91 +2,88 @@ package ru.project.subtrack.services;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import ru.project.subtrack.dto.SubscriptionDTO;
+import ru.project.subtrack.dto.SubscriptionResponseDTO;
 import ru.project.subtrack.models.Subscription;
 import ru.project.subtrack.models.User;
 import ru.project.subtrack.repositories.SubscriptionRepository;
 import ru.project.subtrack.repositories.UserRepository;
+import ru.project.subtrack.security.JwtService;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
-@Service // Помечаем как сервисный класс
-@RequiredArgsConstructor // Lombok создает конструктор для final полей
+@Service
+@RequiredArgsConstructor
 public class SubscriptionService {
 
     private final SubscriptionRepository subscriptionRepository;
     private final UserRepository userRepository;
+    private final JwtService jwtService;
 
-    /**
-     * Создание новой подписки для пользователя.
-     * Проверяет, существует ли пользователь.
-     */
-    public Subscription createSubscription(Subscription subscription, UUID userId) {
-        // Проверяем, есть ли пользователь
-        Optional<User> userOptional = userRepository.findById(userId);
-        if (userOptional.isEmpty()) {
-            throw new RuntimeException("Пользователь с таким ID не найден");
-        }
-
-        // Назначаем пользователя подписке
-        subscription.setUser(userOptional.get());
-
-        // Сохраняем подписку
-        return subscriptionRepository.save(subscription);
+    // Получить все подписки текущего пользователя
+    public List<SubscriptionResponseDTO> getUserSubscriptions(String token) {
+        UUID userId = UUID.fromString(jwtService.extractUserId(token));
+        List<Subscription> subscriptions = subscriptionRepository.findByUserId(userId);
+        return subscriptions.stream().map(this::mapToDTO).collect(Collectors.toList());
     }
 
-    /**
-     * Получить все подписки для конкретного пользователя.
-     */
-    public List<Subscription> getSubscriptionsForUser(UUID userId) {
-        // Проверяем, что пользователь существует
-        Optional<User> userOptional = userRepository.findById(userId);
-        if (userOptional.isEmpty()) {
-            throw new RuntimeException("Пользователь с таким ID не найден");
-        }
+    // Создать подписку для текущего пользователя
+    public SubscriptionResponseDTO createSubscription(String token, SubscriptionDTO subscriptionData) {
+        UUID userId = UUID.fromString(jwtService.extractUserId(token));
+        User user = userRepository.findById(userId).orElseThrow(() -> new RuntimeException("User not found"));
 
-        // Возвращаем список подписок
-        return subscriptionRepository.findByUserId(userId);
+        Subscription subscription = new Subscription();
+        subscription.setServiceName(subscriptionData.getServiceName());
+        subscription.setStartDate(subscriptionData.getStartDate());
+        subscription.setEndDate(subscriptionData.getEndDate());
+        subscription.setUser(user);
+
+        Subscription saved = subscriptionRepository.save(subscription);
+        return mapToDTO(saved);
     }
 
-    /**
-     * Удалить подписку по ID.
-     * Если нет подписки с таким ID — ошибка.
-     */
-    public void deleteSubscription(UUID subscriptionId) {
-        Optional<Subscription> subscriptionOptional = subscriptionRepository.findById(subscriptionId);
-        if (subscriptionOptional.isEmpty()) {
-            throw new RuntimeException("Подписка с таким ID не найдена");
-        }
-        subscriptionRepository.deleteById(subscriptionId);
-    }
+    // Обновить подписку
+    public SubscriptionResponseDTO updateSubscription(String token, UUID subscriptionId, SubscriptionDTO updatedData) {
+        UUID userId = UUID.fromString(jwtService.extractUserId(token));
+        Subscription existing = subscriptionRepository.findById(subscriptionId)
+                .orElseThrow(() -> new RuntimeException("Subscription not found"));
 
-    /**
-     * Редактировать подписку.
-     * Например, изменить дату окончания или название сервиса.
-     */
-    public Subscription updateSubscription(UUID subscriptionId, Subscription updatedSubscription) {
-        Optional<Subscription> subscriptionOptional = subscriptionRepository.findById(subscriptionId);
-        if (subscriptionOptional.isEmpty()) {
-            throw new RuntimeException("Подписка с таким ID не найдена");
+        if (!existing.getUser().getId().equals(userId)) {
+            throw new RuntimeException("Access denied");
         }
 
-        Subscription existingSubscription = subscriptionOptional.get();
+        existing.setServiceName(updatedData.getServiceName());
+        existing.setStartDate(updatedData.getStartDate());
+        existing.setEndDate(updatedData.getEndDate());
 
-        // Обновляем поля (в зависимости от того, что передали)
-        existingSubscription.setServiceName(updatedSubscription.getServiceName());
-        existingSubscription.setStartDate(updatedSubscription.getStartDate());
-        existingSubscription.setEndDate(updatedSubscription.getEndDate());
-
-        // Сохраняем обновленную подписку
-        return subscriptionRepository.save(existingSubscription);
+        Subscription updated = subscriptionRepository.save(existing);
+        return mapToDTO(updated);
     }
 
-    /**
-     * Получить подписку по ID.
-     */
-    public Optional<Subscription> findById(UUID id) {
-        return subscriptionRepository.findById(id);
+    // Удалить подписку
+    public void deleteSubscription(String token, UUID subscriptionId) {
+        UUID userId = UUID.fromString(jwtService.extractUserId(token));
+        Subscription existing = subscriptionRepository.findById(subscriptionId)
+                .orElseThrow(() -> new RuntimeException("Subscription not found"));
+
+        if (!existing.getUser().getId().equals(userId)) {
+            throw new RuntimeException("Access denied");
+        }
+
+        subscriptionRepository.delete(existing);
+    }
+
+    // Маппер в DTO
+    private SubscriptionResponseDTO mapToDTO(Subscription subscription) {
+        SubscriptionResponseDTO dto = new SubscriptionResponseDTO();
+        dto.setId(subscription.getId());
+        dto.setServiceName(subscription.getServiceName());
+        dto.setStartDate(subscription.getStartDate());
+        dto.setEndDate(subscription.getEndDate());
+        dto.setUserId(subscription.getUser().getId());
+        dto.setUserEmail(subscription.getUser().getEmail());
+        return dto;
     }
 }
