@@ -11,7 +11,14 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import ru.project.subtrack.security.JwtAuthFilter;
+
+import java.util.List;
+
+import static org.springframework.security.config.Customizer.withDefaults;
 
 @Configuration
 @RequiredArgsConstructor
@@ -22,20 +29,36 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                .csrf(csrf -> csrf.disable()) // CSRF отключен для REST API
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // Без сессий
+                .cors(withDefaults()) // Глобальный CORS
+                .csrf(csrf -> csrf.disable())
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
-                                "/api/auth/**", // Публичные эндпоинты (регистрация, логин)
-                                "/v3/api-docs/**", // Swagger docs
+                                "/api/auth/**",
+                                "/v3/api-docs/**",
                                 "/swagger-ui/**",
                                 "/swagger-ui.html"
-                        ).permitAll() // Разрешить доступ
-                        .anyRequest().authenticated() // Остальные требуют аутентификацию
+                        ).permitAll()
+                        .anyRequest().authenticated()
                 )
-                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class); // Добавить JWT фильтр
+                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
+    }
+
+
+    // ✅ Правильный способ настройки CORS (единственный актуальный)
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration configuration = new CorsConfiguration();
+        configuration.setAllowedOrigins(List.of("http://localhost:5173")); // тут указываешь фронт
+        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        configuration.setAllowedHeaders(List.of("*")); // или укажи конкретные, если знаешь
+        configuration.setAllowCredentials(true); // если работаешь с токенами (Authorization)
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", configuration);
+        return source;
     }
 
     // Для авторизации через AuthenticationManager (если потребуется)

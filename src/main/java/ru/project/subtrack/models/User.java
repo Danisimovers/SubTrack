@@ -19,13 +19,13 @@ public class User {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @Column(nullable = false)
+    @Column(nullable = true)
     private String name;
 
-    @Column(unique = true, nullable = false)
+    @Column(nullable = true)
     private String email;
 
-    @Column(unique = true, nullable = false)
+    @Column(nullable = true)
     private String phoneNumber;
 
     @Column(nullable = false)
