@@ -1,7 +1,10 @@
 package ru.project.subtrack.services;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import ru.project.subtrack.dto.RegisterRequest;
+import ru.project.subtrack.dto.UserUpdateDTO;
 import ru.project.subtrack.models.User;
 import ru.project.subtrack.repositories.UserRepository;
 import ru.project.subtrack.security.JwtService;
@@ -15,7 +18,8 @@ public class UserService {
     private final UserRepository userRepository;
     private final JwtService jwtService;
 
-    // Получение текущего пользователя по JWT токену
+
+    // ✅ Получение текущего пользователя по JWT токену
     public User getCurrentUser(String token) {
         String userIdStr = jwtService.extractUserId(token);
         UUID userId = UUID.fromString(userIdStr);
@@ -23,18 +27,17 @@ public class UserService {
                 .orElseThrow(() -> new RuntimeException("User not found"));
     }
 
-    // Обновление данных текущего пользователя
-    public User updateCurrentUser(String token, User updatedData) {
+    // Изменённый метод обновления данных
+    public User updateCurrentUser(String token, UserUpdateDTO updatedData) {
         User currentUser = getCurrentUser(token);
 
-        // Обновляем только разрешённые поля (например, name, avatarUrl)
+        // Обновляем только разрешённые поля
         if (updatedData.getName() != null) {
             currentUser.setName(updatedData.getName());
         }
         if (updatedData.getAvatarUrl() != null) {
             currentUser.setAvatarUrl(updatedData.getAvatarUrl());
         }
-        // Можно добавить другие поля по желанию, но email, password, phone обычно не обновляются тут
 
         return userRepository.save(currentUser); // Сохраняем обновлённого пользователя
     }

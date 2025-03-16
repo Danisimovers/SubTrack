@@ -1,19 +1,32 @@
 package ru.project.subtrack.repositories;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
 import ru.project.subtrack.models.User;
-import ru.project.subtrack.models.Subscription;
 
-import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+@Repository
 public interface UserRepository extends JpaRepository<User, UUID> {
 
-    Optional<User> findById(UUID id);
-
+    // Поиск по email
     Optional<User> findByEmail(String email);
 
-    // Можно добавить поиск по телефону, если нужно
+    // Поиск по телефону
     Optional<User> findByPhoneNumber(String phoneNumber);
+
+    // Поиск по username (если username отдельное поле)
+    Optional<User> findByName(String name);
+
+    // Поиск для логина (email или phone)
+    Optional<User> findByEmailOrPhoneNumber(String email, String phoneNumber);
+
+    // Проверки на существование
+    boolean existsByEmail(String email);
+
+    boolean existsByPhoneNumber(String phoneNumber);
+
+    boolean existsByName(String name); // для username
+
 }

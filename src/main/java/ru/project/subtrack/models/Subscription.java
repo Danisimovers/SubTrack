@@ -2,8 +2,12 @@ package ru.project.subtrack.models;
 
 import jakarta.persistence.*;
 import lombok.*;
+
+import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.UUID;
+
 @Builder
 @Entity
 @Table(name = "subscriptions")
@@ -21,22 +25,25 @@ public class Subscription {
     private String serviceName; // Например, "Яндекс Плюс", "VK Музыка"
 
     @Column(nullable = false)
-    private LocalDateTime startDate;
+    private BigDecimal price; // Стоимость подписки
 
     @Column(nullable = false)
-    private LocalDateTime endDate;
+    private LocalDate startDate;
 
-    @ManyToOne
+    @Column(nullable = false)
+    private LocalDate endDate;
+
+    @ManyToOne(fetch = FetchType.LAZY) // LAZY для оптимизации
     @JoinColumn(name = "user_id", nullable = false)
-    private User user;
+    private User user; // Владелец подписки
 
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt; // Дата создания
 
-    @Column()
+    @Column
     private LocalDateTime updatedAt; // Дата последнего обновления
 
-    // Метод для автоматического установления времени при создании подписки
+    // Метод для установки createdAt и updatedAt перед созданием
     @PrePersist
     public void prePersist() {
         LocalDateTime now = LocalDateTime.now();
@@ -44,9 +51,9 @@ public class Subscription {
         updatedAt = now;
     }
 
-    // Метод для обновления времени при изменении подписки
+    // Метод для обновления updatedAt перед изменением
     @PreUpdate
     public void preUpdate() {
-        updatedAt = LocalDateTime.now(); // Обновляем только updatedAt при изменении
+        updatedAt = LocalDateTime.now();
     }
 }

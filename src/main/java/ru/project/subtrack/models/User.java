@@ -1,11 +1,16 @@
 package ru.project.subtrack.models;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.Pattern;
+import ru.project.subtrack.validations.AtLeastOneContact;
 import lombok.*;
+
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+
 @Builder
 @Entity
 @Table(name = "users")
@@ -13,6 +18,7 @@ import java.util.UUID;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@AtLeastOneContact // Наша аннотация для проверки, что хотя бы одно из двух указано
 public class User {
 
     @Id
@@ -22,10 +28,15 @@ public class User {
     @Column(nullable = true)
     private String name;
 
-    @Column(nullable = true)
+    @Email(message = "Некорректный email")
+    @Column(unique = true, nullable = true)
     private String email;
 
-    @Column(nullable = true)
+    @Pattern(
+            regexp = "^\\+?[0-9]{10,15}$",
+            message = "Некорректный номер телефона"
+    )
+    @Column(unique = true, nullable = true)
     private String phoneNumber;
 
     @Column(nullable = false)
@@ -36,14 +47,12 @@ public class User {
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
-    @Column()
+    @Column
     private LocalDateTime updatedAt;
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Subscription> subscriptions = new ArrayList<>();
 
-
-    // Метод для автоматической установки времени
     @PrePersist
     public void prePersist() {
         LocalDateTime now = LocalDateTime.now();
@@ -51,7 +60,6 @@ public class User {
         updatedAt = now;
     }
 
-    // Метод для обновления времени при изменении сущности
     @PreUpdate
     public void preUpdate() {
         updatedAt = LocalDateTime.now();

@@ -1,23 +1,33 @@
-// src/App.tsx
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import LoginForm from './components/LoginForm';
-import RegisterForm from './components/RegisterForm';
-import Dashboard from './components/Dashboard';
-import HomePage from './components/HomePage';
+import { Routes, Route } from "react-router-dom";
+import HomePage from "./pages/HomePage.tsx";
+import RegisterPage from "./pages/RegisterPage.tsx";
+import LoginPage from "./pages/LoginPage.tsx";
+import DashboardPage from "./pages/DashboardPage.tsx";
 
-const App = () => {
-    const token = localStorage.getItem('token');
 
+function App() {
     return (
-        <Router>
-            <Routes>
-                <Route path="/" element={<HomePage />} />
-                <Route path="/login" element={<LoginForm />} />
-                <Route path="/register" element={<RegisterForm />} />
-                <Route path="/dashboard" element={token ? <Dashboard /> : <Navigate to="/login" />} />
-            </Routes>
-        </Router>
+        <Routes>
+            {/* Главная страница */}
+            <Route path="/" element={<HomePage />} />
+
+            {/* Страница регистрации */}
+            <Route path="/register" element={<RegisterPage />} />
+
+            {/* Страница входа */}
+            <Route path="/login" element={<LoginPage />} />
+
+            {/* Личный кабинет (доступен только авторизованным) */}
+            <Route
+                path="/dashboard"
+                element={
+
+                    <DashboardPage />
+
+                }
+            />
+        </Routes>
     );
-};
+}
 
 export default App;

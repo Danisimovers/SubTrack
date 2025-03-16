@@ -1,8 +1,11 @@
 package ru.project.subtrack.controllers;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import ru.project.subtrack.dto.UserResponseDTO;
+import ru.project.subtrack.dto.UserUpdateDTO;
 import ru.project.subtrack.models.User;
 import ru.project.subtrack.services.UserService;
 
@@ -15,22 +18,45 @@ public class UserController {
 
     // Получить профиль текущего пользователя
     @GetMapping("/profile")
-    public ResponseEntity<User> getProfile(@RequestHeader("Authorization") String authHeader) {
+    public ResponseEntity<UserResponseDTO> getProfile(@RequestHeader("Authorization") String authHeader) {
         String token = extractToken(authHeader);
         User currentUser = userService.getCurrentUser(token);
-        return ResponseEntity.ok(currentUser);
+
+        // Собираем DTO для ответа
+        UserResponseDTO responseDTO = UserResponseDTO.builder()
+                .name(currentUser.getName())
+                .email(currentUser.getEmail())
+                .phoneNumber(currentUser.getPhoneNumber())
+                .avatarUrl(currentUser.getAvatarUrl())
+                .createdAt(currentUser.getCreatedAt().toString())
+                .updatedAt(currentUser.getUpdatedAt() != null ? currentUser.getUpdatedAt().toString() : null)
+                .build();
+
+        return ResponseEntity.ok(responseDTO);
     }
 
     // Обновить профиль текущего пользователя
     @PutMapping("/profile")
-    public ResponseEntity<User> updateProfile(
+    public ResponseEntity<UserResponseDTO> updateProfile(
             @RequestHeader("Authorization") String authHeader,
-            @RequestBody User updatedData
+            @RequestBody @Valid UserUpdateDTO updateDTO // <-- добавили @Valid
     ) {
         String token = extractToken(authHeader);
-        User updatedUser = userService.updateCurrentUser(token, updatedData);
-        return ResponseEntity.ok(updatedUser);
+        User updatedUser = userService.updateCurrentUser(token, updateDTO);
+
+        // Возвращаем DTO для ответа
+        UserResponseDTO responseDTO = UserResponseDTO.builder()
+                .name(updatedUser.getName())
+                .email(updatedUser.getEmail())
+                .phoneNumber(updatedUser.getPhoneNumber())
+                .avatarUrl(updatedUser.getAvatarUrl())
+                .createdAt(updatedUser.getCreatedAt().toString())
+                .updatedAt(updatedUser.getUpdatedAt() != null ? updatedUser.getUpdatedAt().toString() : null)
+                .build();
+
+        return ResponseEntity.ok(responseDTO);
     }
+
 
     // Вспомогательный метод для извлечения токена из заголовка Authorization
     private String extractToken(String authHeader) {

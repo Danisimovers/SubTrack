@@ -1,5 +1,6 @@
 package ru.project.subtrack.controllers;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -29,7 +30,7 @@ public class SubscriptionController {
     @PostMapping
     public ResponseEntity<SubscriptionResponseDTO> createSubscription(
             @RequestHeader("Authorization") String authHeader,
-            @RequestBody SubscriptionDTO subscriptionData
+            @RequestBody @Valid SubscriptionDTO subscriptionData
     ) {
         String token = extractToken(authHeader);
         SubscriptionResponseDTO created = subscriptionService.createSubscription(token, subscriptionData);
@@ -41,12 +42,13 @@ public class SubscriptionController {
     public ResponseEntity<SubscriptionResponseDTO> updateSubscription(
             @RequestHeader("Authorization") String authHeader,
             @PathVariable UUID id,
-            @RequestBody SubscriptionDTO updatedData
+            @RequestBody @Valid SubscriptionDTO updatedData
     ) {
         String token = extractToken(authHeader);
         SubscriptionResponseDTO updated = subscriptionService.updateSubscription(token, id, updatedData);
         return ResponseEntity.ok(updated);
     }
+
 
     // Удалить подписку
     @DeleteMapping("/{id}")
