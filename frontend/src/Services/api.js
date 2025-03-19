@@ -1,13 +1,13 @@
 import axios from "axios";
 
 const api = axios.create({
-    baseURL: "http://localhost:8081/api",
+    baseURL: "http://localhost:8081/api",  // Замените на свой URL
     headers: {
         "Content-Type": "application/json",
     },
 });
 
-export const setAuthToken = (token: string | null) => {
+export const setAuthToken = (token) => {
     if (token) {
         api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
     } else {
