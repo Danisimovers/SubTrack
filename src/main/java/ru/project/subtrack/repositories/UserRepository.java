@@ -1,6 +1,8 @@
 package ru.project.subtrack.repositories;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import ru.project.subtrack.models.User;
 
@@ -20,7 +22,9 @@ public interface UserRepository extends JpaRepository<User, UUID> {
     Optional<User> findByName(String name);
 
     // Поиск для логина (email или phone)
-    Optional<User> findByEmailOrPhoneNumber(String email, String phoneNumber);
+    @Query("SELECT u FROM User u WHERE u.email = :identifier OR u.phoneNumber = :identifier")
+    Optional<User> findByEmailOrPhoneNumber(@Param("identifier") String identifier);
+
 
     // Проверки на существование
     boolean existsByEmail(String email);
