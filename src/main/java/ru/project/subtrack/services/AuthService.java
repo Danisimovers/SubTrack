@@ -21,12 +21,12 @@ public class AuthService {
     private final JwtService jwtService;
 
     public AuthResponse register(RegisterRequest request) {
-        validateEmailOrPhoneProvided(request.getEmail(), request.getPhoneNumber());
-        checkUserUniqueness(request.getEmail(), request.getPhoneNumber());
+        validateEmailOrPhoneProvided(request.getEmail(), request.getPhone());
+        checkUserUniqueness(request.getEmail(), request.getPhone());
 
         User user = User.builder()
                 .email(request.getEmail())
-                .phoneNumber(request.getPhoneNumber())
+                .phoneNumber(request.getPhone())
                 .password(passwordEncoder.encode(request.getPassword()))
                 .name(request.getUsername())
                 .createdAt(LocalDateTime.now())
@@ -43,14 +43,19 @@ public class AuthService {
     }
 
     public AuthResponse login(LoginRequest request) {
-        validateEmailOrPhoneProvided(request.getEmail(), request.getPhoneNumber());
+        validateEmailOrPhoneProvided(request.getEmail(), request.getPhone());
 
-        User user = userRepository.findByEmailOrPhoneNumber(request.getEmail(), request.getPhoneNumber())
+        String identifier = request.getEmail() != null ? request.getEmail() : request.getPhone();
+
+        System.out.println("Ищем пользователя по идентификатору: " + identifier);
+
+        User user = userRepository.findByEmailOrPhoneNumber(identifier)
                 .orElseThrow(() -> new RuntimeException("Invalid email/phone number or password"));
 
-        if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
+        if (user.getPassword() == null || !passwordEncoder.matches(request.getPassword(), user.getPassword())) {
             throw new RuntimeException("Invalid email/phone number or password");
         }
+
 
         String token = jwtService.generateToken(
                 user.getId(),
