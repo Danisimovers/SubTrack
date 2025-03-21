@@ -14,5 +14,16 @@ export const setAuthToken = (token) => {
         delete api.defaults.headers.common["Authorization"];
     }
 };
+export const sendTestSms = async (phone, message) => {
+    try {
+        const response = await api.post('/sms/send', null, {
+            params: { phone, message }
+        });
+        return response.data;
+    } catch (error) {
+        console.error('Ошибка при отправке SMS:', error);
+        throw error;
+    }
+};
 
 export default api;
