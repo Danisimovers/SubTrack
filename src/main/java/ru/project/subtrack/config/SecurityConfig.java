@@ -38,6 +38,7 @@ public class SecurityConfig {
                                 "/v3/api-docs/**",
                                 "/swagger-ui/**",
                                 "/swagger-ui.html"
+
                         ).permitAll()
                         .anyRequest().authenticated()
                 )
@@ -51,7 +52,7 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of("http://localhost:5173")); // тут указываешь фронт
+        configuration.setAllowedOrigins(List.of("http://localhost:5174")); // тут указываешь фронт
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*")); // или укажи конкретные, если знаешь
         configuration.setAllowCredentials(true); // если работаешь с токенами (Authorization)

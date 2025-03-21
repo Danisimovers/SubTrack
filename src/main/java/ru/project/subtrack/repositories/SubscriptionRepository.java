@@ -4,6 +4,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 import ru.project.subtrack.models.Subscription;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -15,6 +16,8 @@ public interface SubscriptionRepository extends JpaRepository<Subscription, UUID
 
     // (по желанию) Проверить, существует ли подписка у пользователя
     boolean existsByIdAndUserId(UUID subscriptionId, UUID userId);
+
+    List<Subscription> findByEndDate(LocalDate endDate);
 
     // (по желанию) Найти по сервису и пользователю (если вдруг понадобится)
     Optional<Subscription> findByServiceNameAndUserId(String serviceName, UUID userId);

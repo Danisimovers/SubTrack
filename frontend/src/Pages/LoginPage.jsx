@@ -1,23 +1,36 @@
 import { useState } from 'react';
+import api from "../services/api";
 import { useAuth } from '../context/AuthContext';
 import { Link } from 'react-router-dom';
 import { FaEnvelope, FaLock } from 'react-icons/fa';
 
 const LoginPage = () => {
     const { login } = useAuth();
-    const [credentials, setCredentials] = useState({ email: '', password: '' });
-    const [error, setError] = useState('');
+
+    const [loginMethod, setLoginMethod] = useState("email"); // "email" или "phone"
+    const [identifier, setIdentifier] = useState("");
+    const [password, setPassword] = useState("");
+    const [error, setError] = useState("");
 
     const handleLogin = async (e) => {
         e.preventDefault();
-        setError('');
+        setError("");
 
         try {
-            await login(credentials.email, credentials.password);
-        } catch {
-            setError('Ошибка при входе. Проверьте данные.');
+            const response = await api.post("/auth/login", {
+                [loginMethod]: identifier, // Динамическое поле для email или phone
+                password,
+            });
+
+            const { token, name, email, phoneNumber } = response.data;
+
+            const user = { name, email, phoneNumber }; // ✅ Собираем корректную структуру данных
+            login(token, user); // Передаем user в login
+        } catch (err) {
+            console.error("Ошибка при входе:", err);
         }
     };
+
 
     return (
         <div className="min-h-screen flex items-center justify-center bg-gradient-to-r from-blue-500 to-purple-600 p-6">
@@ -30,10 +43,10 @@ const LoginPage = () => {
                     <div className="relative">
                         <FaEnvelope className="absolute top-3 left-3 text-blue-500" />
                         <input
-                            type="email"
-                            placeholder="Email"
-                            value={credentials.email}
-                            onChange={(e) => setCredentials({ ...credentials, email: e.target.value })}
+                            type="text" // Изменено на text для поддержки как email, так и телефона
+                            placeholder={loginMethod === "email" ? "Email" : "Телефон"}
+                            value={identifier}
+                            onChange={(e) => setIdentifier(e.target.value)}
                             required
                             className="w-full pl-10 px-4 py-2 border border-blue-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                         />
@@ -44,8 +57,8 @@ const LoginPage = () => {
                         <input
                             type="password"
                             placeholder="Пароль"
-                            value={credentials.password}
-                            onChange={(e) => setCredentials({ ...credentials, password: e.target.value })}
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
                             required
                             className="w-full pl-10 px-4 py-2 border border-blue-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                         />
@@ -60,7 +73,7 @@ const LoginPage = () => {
                 </form>
 
                 <p className="mt-4 text-center">
-                    Нет аккаунта? {" "}
+                    Нет аккаунта?{" "}
                     <Link to="/register" className="text-blue-500 hover:underline">
                         Зарегистрироваться
                     </Link>
@@ -68,6 +81,7 @@ const LoginPage = () => {
             </div>
         </div>
     );
+
 };
 
 export default LoginPage;

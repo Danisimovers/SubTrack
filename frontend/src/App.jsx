@@ -5,6 +5,7 @@ import RegisterPage from './Pages/RegisterPage';
 import DashboardPage from './Pages/DashboardPage';
 import LoginPage from './Pages/LoginPage';
 import ProfilePage from './Pages/ProfilePage';
+import Statistics from "./Pages/Statistics.jsx";
 
 const App = () => (
     <Routes>
@@ -14,6 +15,7 @@ const App = () => (
             <Route path="/register" element={<RegisterPage />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/dashboard" element={<DashboardPage />} />
+            <Route path="/statistics" element={<Statistics />} />
         </Route>
     </Routes>
 );
