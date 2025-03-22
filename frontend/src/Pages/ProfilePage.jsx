@@ -4,10 +4,12 @@ import api from "../services/api";
 
 const ProfilePage = () => {
     const { user, updateUser, token } = useAuth();
+
+
     const [formData, setFormData] = useState({
         name: user?.name || '',
         email: user?.email || '',
-        phone: user?.phone || '',
+        phone: user?.phoneNumber || '',
         notifications: user?.notifications || ''
     });
 
@@ -67,18 +69,28 @@ const ProfilePage = () => {
         }
 
         try {
-            const response = await api.post('/sms/send', null, {
-                params: {
-                    phone: formData.phone,
-                    message: "Тестовое SMS от сервиса подписок."
-                }
-            });
-            alert(`СМС отправлено: ${response.data}`);
+            const phone = formData.phone.replace(/\D/g, ""); // Оставляем только цифры
+            const message = "Срок действия вашей подписки истекает. Не забудьте продлить ее!)";
+
+            console.log("Отправка SMS:", { phone, message });
+
+            const response = await api.post('sms/send', null, { params: { phone, message } });
+
+            console.log("Ответ сервера:", response.data);
+            alert(`СМС отправлено: ${JSON.stringify(response.data)}`);
         } catch (err) {
-            console.error('Ошибка при отправке SMS:', err);
-            alert('Ошибка при отправке SMS');
+            console.error("Ошибка при отправке SMS:", err);
+
+            if (err.response) {
+                console.error("Статус ошибки:", err.response.status);
+                console.error("Ответ сервера:", err.response.data);
+                alert(`Ошибка при отправке SMS: ${JSON.stringify(err.response.data)}`);
+            } else {
+                alert(`Ошибка при отправке SMS: ${err.message}`);
+            }
         }
     };
+
 
     return (
         <div className="min-h-screen flex items-center justify-center bg-[#0C0032] p-6">

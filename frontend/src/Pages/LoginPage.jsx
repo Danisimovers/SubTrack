@@ -2,7 +2,7 @@ import { useState } from 'react';
 import api from "../services/api";
 import { useAuth } from '../context/AuthContext';
 import { Link } from 'react-router-dom';
-import { FaEnvelope, FaLock } from 'react-icons/fa';
+import { FaEnvelope, FaPhone, FaLock } from 'react-icons/fa';
 
 const LoginPage = () => {
     const { login } = useAuth();
@@ -18,32 +18,51 @@ const LoginPage = () => {
 
         try {
             const response = await api.post("/auth/login", {
-                [loginMethod]: identifier, // Динамическое поле для email или phone
+                [loginMethod]: identifier,
                 password,
             });
 
             const { token, name, email, phoneNumber } = response.data;
-
-            const user = { name, email, phoneNumber }; // ✅ Собираем корректную структуру данных
-            login(token, user); // Передаем user в login
+            const user = { name, email, phoneNumber };
+            login(token, user);
         } catch (err) {
-            console.error("Ошибка при входе:", err);
+            setError(err.response?.data?.message || "Ошибка входа");
         }
     };
-
 
     return (
         <div className="min-h-screen flex items-center justify-center bg-gradient-to-r from-blue-500 to-purple-600 p-6">
             <div className="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-md transform hover:scale-105 transition duration-300">
                 <h2 className="text-3xl font-extrabold text-center text-blue-700 mb-6">Вход в SubTrack</h2>
 
+                <div className="flex justify-center space-x-4 mb-6">
+                    <button
+                        type="button"
+                        className={`flex items-center gap-2 px-4 py-2 rounded-lg text-white ${loginMethod === "email" ? "bg-blue-600" : "bg-gray-300 text-gray-700"}`}
+                        onClick={() => setLoginMethod("email")}
+                    >
+                        <FaEnvelope /> Email
+                    </button>
+                    <button
+                        type="button"
+                        className={`flex items-center gap-2 px-4 py-2 rounded-lg text-white ${loginMethod === "phone" ? "bg-blue-600" : "bg-gray-300 text-gray-700"}`}
+                        onClick={() => setLoginMethod("phone")}
+                    >
+                        <FaPhone /> Телефон
+                    </button>
+                </div>
+
                 {error && <p className="text-red-500 text-center mb-4">{error}</p>}
 
                 <form onSubmit={handleLogin} className="space-y-4">
                     <div className="relative">
-                        <FaEnvelope className="absolute top-3 left-3 text-blue-500" />
+                        {loginMethod === "email" ? (
+                            <FaEnvelope className="absolute top-3 left-3 text-blue-500" />
+                        ) : (
+                            <FaPhone className="absolute top-3 left-3 text-blue-500" />
+                        )}
                         <input
-                            type="text" // Изменено на text для поддержки как email, так и телефона
+                            type={loginMethod === "email" ? "email" : "tel"}
                             placeholder={loginMethod === "email" ? "Email" : "Телефон"}
                             value={identifier}
                             onChange={(e) => setIdentifier(e.target.value)}
@@ -81,7 +100,6 @@ const LoginPage = () => {
             </div>
         </div>
     );
-
 };
 
 export default LoginPage;

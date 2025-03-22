@@ -14,7 +14,7 @@ public class RegisterRequest {
     private String email;
 
     @Pattern(regexp = "\\+?[0-9]{10,15}", message = "Некорректный формат номера телефона")
-    private String phoneNumber;
+    private String phone;
 
     @NotBlank(message = "Пароль не может быть пустым")
     private String password;
