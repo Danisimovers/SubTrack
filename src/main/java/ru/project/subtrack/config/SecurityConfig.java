@@ -37,7 +37,9 @@ public class SecurityConfig {
                                 "/api/auth/**",
                                 "/v3/api-docs/**",
                                 "/swagger-ui/**",
-                                "/swagger-ui.html"
+                                "/swagger-ui.html",
+                                "/api/sms/send" // Добавляем сюда, если SMS отправлять можно без токена
+
                         ).permitAll()
                         .anyRequest().authenticated()
                 )

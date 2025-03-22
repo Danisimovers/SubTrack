@@ -69,6 +69,13 @@ public class SubscriptionController {
         return ResponseEntity.ok().build();
     }
 
+    @GetMapping("/trigger-check")
+    public String triggerSubscriptionCheck() {
+        subscriptionService.checkExpiringSubscriptions();
+        return "Проверка подписок запущена!";
+    }
+
+    // Вспомогательная функция для извлечения токена
     @PatchMapping("/{id}/status")
     public ResponseEntity<SubscriptionResponseDTO> updateSubscriptionStatus(
             @RequestHeader("Authorization") String authHeader,

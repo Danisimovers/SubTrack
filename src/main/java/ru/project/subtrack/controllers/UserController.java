@@ -66,4 +66,21 @@ public class UserController {
             throw new RuntimeException("Invalid Authorization header");
         }
     }
+
+    @PutMapping("/update")
+    public ResponseEntity<UserResponseDTO> updateUser(@RequestHeader("Authorization") String token, @RequestBody UserUpdateDTO updateDTO) {
+        User updatedUser = userService.updateCurrentUser(token.replace("Bearer ", ""), updateDTO);
+
+        // Создаём DTO для возврата
+        UserResponseDTO responseDTO = UserResponseDTO.builder()
+                .name(updatedUser.getName())
+                .email(updatedUser.getEmail())
+                .phoneNumber(updatedUser.getPhoneNumber())
+                .avatarUrl(updatedUser.getAvatarUrl())
+                .createdAt(updatedUser.getCreatedAt().toString())
+                .updatedAt(updatedUser.getUpdatedAt().toString())
+                .build();
+
+        return ResponseEntity.ok(responseDTO);
+    }
 }

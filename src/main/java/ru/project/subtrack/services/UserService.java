@@ -31,14 +31,19 @@ public class UserService {
     public User updateCurrentUser(String token, UserUpdateDTO updatedData) {
         User currentUser = getCurrentUser(token);
 
-        // Обновляем только разрешённые поля
         if (updatedData.getName() != null) {
             currentUser.setName(updatedData.getName());
         }
         if (updatedData.getAvatarUrl() != null) {
             currentUser.setAvatarUrl(updatedData.getAvatarUrl());
         }
+        if (updatedData.getEmail() != null && !updatedData.getEmail().isBlank()) {
+            currentUser.setEmail(updatedData.getEmail());
+        }
+        if (updatedData.getPhoneNumber() != null && !updatedData.getPhoneNumber().isBlank()) {
+            currentUser.setPhoneNumber(updatedData.getPhoneNumber());
+        }
 
-        return userRepository.save(currentUser); // Сохраняем обновлённого пользователя
+        return userRepository.save(currentUser);
     }
 }

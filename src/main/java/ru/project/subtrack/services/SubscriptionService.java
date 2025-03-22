@@ -1,7 +1,10 @@
 package ru.project.subtrack.services;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import ru.project.subtrack.dto.SubscriptionDTO;
 import ru.project.subtrack.dto.SubscriptionResponseDTO;
 import ru.project.subtrack.exceptions.BusinessException;
@@ -20,6 +23,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class SubscriptionService {
@@ -27,6 +31,7 @@ public class SubscriptionService {
     private final SubscriptionRepository subscriptionRepository;
     private final UserRepository userRepository;
     private final JwtService jwtService;
+    private final EmailService emailService; // Добавляем сервис отправки email
 
     // ✅ Получить все подписки текущего пользователя (с фильтрацией)
     public List<SubscriptionResponseDTO> getUserSubscriptions(String token, SubscriptionCategory category, SubscriptionStatus status, List<String> tags) {
@@ -48,18 +53,22 @@ public class SubscriptionService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new BusinessException("User not found"));
 
+        // Проверяем, нет ли уже подписки на этот сервис
         if (subscriptionRepository.findByServiceNameAndUserId(subscriptionData.getServiceName(), userId).isPresent()) {
             throw new BusinessException("Subscription to this service already exists");
         }
 
+        // Проверяем корректность дат
         if (subscriptionData.getEndDate().isBefore(subscriptionData.getStartDate())) {
             throw new BusinessException("End date must be after start date");
         }
 
+        // Проверяем цену (должна быть положительной)
         if (subscriptionData.getPrice() == null || subscriptionData.getPrice().compareTo(BigDecimal.ZERO) <= 0) {
             throw new BusinessException("Price must be greater than zero");
         }
 
+        // Сохраняем подписку
         Subscription subscription = Subscription.builder()
                 .serviceName(subscriptionData.getServiceName())
                 .startDate(subscriptionData.getStartDate())
@@ -111,6 +120,7 @@ public class SubscriptionService {
         Subscription existing = subscriptionRepository.findById(subscriptionId)
                 .orElseThrow(() -> new BusinessException("Subscription not found"));
 
+        // Проверка прав
         if (!existing.getUser().getId().equals(userId)) {
             throw new BusinessException("Access denied");
         }
@@ -239,4 +249,23 @@ public class SubscriptionService {
     }
 
 
+
+    @Scheduled(cron = "0 22 21 * * *")
+    @Transactional
+    public void checkExpiringSubscriptions() {
+        LocalDate threeDaysLater = LocalDate.now().plusDays(3);
+        List<Subscription> expiringSubscriptions = subscriptionRepository.findByEndDate(threeDaysLater);
+
+        for (Subscription subscription : expiringSubscriptions) {
+            String email = subscription.getUser().getEmail();
+            System.out.println(email);
+            String subject = "Ваша подписка скоро истекает";
+            String message = "Здравствуйте, " + subscription.getUser().getName() +
+                    "\n\nВаша подписка на " + subscription.getServiceName() +
+                    " истекает через 3 дня (" + subscription.getEndDate() + ")." +
+                    "\nПожалуйста, продлите её, если хотите продолжить пользоваться сервисом.";
+
+            emailService.sendEmail(email, subject, message);
+        }
+    }
 }
