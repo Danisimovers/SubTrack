@@ -1,13 +1,13 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { setAuthToken } from "../services/api";
+import api from "../services/api"; // Убрал дублирующий импорт updateUser
 
 const AuthContext = createContext(null);
 
 export const useAuth = () => useContext(AuthContext);
 
 export { AuthContext };
-
 
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
@@ -22,9 +22,8 @@ export const AuthProvider = ({ children }) => {
             const storedUser = localStorage.getItem("user");
 
             try {
-                const parsedUser = storedUser && storedUser !== "undefined"
-                    ? JSON.parse(storedUser)
-                    : null;
+                const parsedUser =
+                    storedUser && storedUser !== "undefined" ? JSON.parse(storedUser) : null;
 
                 setUser(parsedUser);
             } catch (error) {
@@ -34,9 +33,6 @@ export const AuthProvider = ({ children }) => {
         }
     }, []);
 
-
-
-
     const login = (token, userData) => {
         localStorage.setItem("token", token);
         localStorage.setItem("user", JSON.stringify(userData)); // ✅ Сохраняем user в виде JSON
@@ -44,8 +40,6 @@ export const AuthProvider = ({ children }) => {
         setUser(userData);
         navigate("/dashboard");
     };
-
-
 
     const logout = () => {
         localStorage.removeItem("token");
@@ -55,11 +49,26 @@ export const AuthProvider = ({ children }) => {
         navigate("/");
     };
 
-    const updateUser = (updatedData) => {
-        setUser((prevUser) => ({
-            ...prevUser,
-            ...updatedData
-        }));
+    const updateUser = async (updatedData) => {
+        console.log("Отправляемые данные:", updatedData);
+        if (!user) return; // Проверяем, есть ли пользователь
+
+        try {
+            const response = await api.put("/user/update", updatedData);
+            const updatedUser = response.data;
+
+            setUser((prevUser) => ({
+                ...prevUser,
+                ...updatedUser,
+            }));
+
+            localStorage.setItem("user", JSON.stringify(updatedUser)); // Обновляем данные в локальном хранилище
+        } catch (error) {
+            console.error("Ошибка при обновлении данных пользователя:", error);
+            if (error.response) {
+                console.error("Ответ сервера:", error.response.data);
+            }
+        }
     };
 
     return (

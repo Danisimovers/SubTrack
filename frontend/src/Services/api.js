@@ -33,5 +33,15 @@ export const sendTestSms = async (phone, message) => {
     }
 };
 
+// Метод обновления данных пользователя
+export const updateUser = async (updatedData) => {
+    try {
+        const response = await api.put('/user/update', updatedData);
+        return response.data;
+    } catch (error) {
+        console.error("Ошибка обновления пользователя:", error);
+        throw error;
+    }
+};
 
 export default api;
