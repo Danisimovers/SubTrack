@@ -6,15 +6,16 @@ import lombok.*;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
-@Builder
 @Entity
 @Table(name = "subscriptions")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class Subscription {
 
     @Id
@@ -22,7 +23,7 @@ public class Subscription {
     private UUID id;
 
     @Column(nullable = false)
-    private String serviceName; // Например, "Яндекс Плюс", "VK Музыка"
+    private String serviceName; // Название сервиса
 
     @Column(nullable = false)
     private BigDecimal price; // Стоимость подписки
@@ -33,25 +34,37 @@ public class Subscription {
     @Column(nullable = false)
     private LocalDate endDate;
 
-    @ManyToOne(fetch = FetchType.LAZY) // LAZY для оптимизации
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private SubscriptionCategory category; // Основная категория
+
+    @ElementCollection
+    @CollectionTable(name = "subscription_tags", joinColumns = @JoinColumn(name = "subscription_id"))
+    @Column(name = "tag")
+    private List<String> tags; // Пользовательские теги
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private SubscriptionStatus status; // Статус подписки
+
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
-    private User user; // Владелец подписки
+    private User user;
 
     @Column(nullable = false, updatable = false)
-    private LocalDateTime createdAt; // Дата создания
+    private LocalDateTime createdAt;
 
     @Column
-    private LocalDateTime updatedAt; // Дата последнего обновления
+    private LocalDateTime updatedAt;
 
-    // Метод для установки createdAt и updatedAt перед созданием
     @PrePersist
     public void prePersist() {
         LocalDateTime now = LocalDateTime.now();
         createdAt = now;
         updatedAt = now;
+        status = SubscriptionStatus.ACTIVE; // Новая подписка по умолчанию активна
     }
 
-    // Метод для обновления updatedAt перед изменением
     @PreUpdate
     public void preUpdate() {
         updatedAt = LocalDateTime.now();
