@@ -2,7 +2,6 @@ package ru.project.subtrack.dto;
 
 import jakarta.validation.constraints.*;
 import lombok.Data;
-import ru.project.subtrack.models.SubscriptionCategory;
 import ru.project.subtrack.validations.ValidDateRange;
 
 import java.math.BigDecimal;
@@ -27,8 +26,6 @@ public class SubscriptionDTO {
     @DecimalMin(value = "0.01", message = "Price must be greater than zero")
     private BigDecimal price;
 
-    @NotNull(message = "Category is required")
-    private SubscriptionCategory category;
 
     private List<String> tags; // Опциональные пользовательские метки
 }

@@ -6,7 +6,8 @@ import lombok.*;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.UUID;
 
 @Entity
@@ -36,20 +37,19 @@ public class Subscription {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private SubscriptionCategory category; // Основная категория
-
-    @ElementCollection
-    @CollectionTable(name = "subscription_tags", joinColumns = @JoinColumn(name = "subscription_id"))
-    @Column(name = "tag")
-    private List<String> tags; // Пользовательские теги
-
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
     private SubscriptionStatus status; // Статус подписки
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
+
+    @ManyToMany
+    @JoinTable(
+            name = "subscription_tags",
+            joinColumns = @JoinColumn(name = "subscription_id"),
+            inverseJoinColumns = @JoinColumn(name = "tag_id")
+    )
+    private Set<Tag> tags = new HashSet<>(); // Теги подписки
 
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;

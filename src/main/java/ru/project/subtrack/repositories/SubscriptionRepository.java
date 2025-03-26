@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import ru.project.subtrack.models.Subscription;
+import ru.project.subtrack.models.SubscriptionStatus;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -14,6 +15,21 @@ import java.util.Optional;
 import java.util.UUID;
 @Repository
 public interface SubscriptionRepository extends JpaRepository<Subscription, UUID> {
+    @Query("SELECT s FROM Subscription s JOIN s.tags t WHERE t.name = :tagName AND s.user.id = :userId")
+    List<Subscription> findByTag(@Param("userId") UUID userId, @Param("tagName") String tagName);
+
+    @Query("SELECT s FROM Subscription s JOIN s.tags t WHERE s.user.id = :userId AND t.name IN :tagNames")
+    List<Subscription> findByTags(@Param("userId") UUID userId, @Param("tagNames") List<String> tagNames);
+
+    @Query("SELECT s FROM Subscription s JOIN s.tags t WHERE s.user.id = :userId " +
+            "AND t.name IN :tagNames " +
+            "AND s.status = :status " +
+            "AND s.endDate <= :endDate")
+    List<Subscription> findByTagsAndStatusAndEndDateBefore(@Param("userId") UUID userId,
+                                                           @Param("tagNames") List<String> tagNames,
+                                                           @Param("status") SubscriptionStatus status,
+                                                           @Param("endDate") LocalDate endDate);
+
 
     Optional<Subscription> findById(UUID subscriptionId);
     List<Subscription> findByUserId(UUID userId);
@@ -30,9 +46,18 @@ public interface SubscriptionRepository extends JpaRepository<Subscription, UUID
     void deleteByIdAndUserId(UUID subscriptionId, UUID userId);
     // Общие траты за указанный месяц
     // 1️⃣ Общие месячные траты пользователя
-    @Query("SELECT COALESCE(SUM(s.price), 0) FROM Subscription s " +
-            "WHERE s.user.id = :userId AND MONTH(s.endDate) = MONTH(CURRENT_DATE) AND YEAR(s.endDate) = YEAR(CURRENT_DATE)")
+    @Query("SELECT COALESCE(SUM(s.price / " +
+            "CASE " +
+            "WHEN EXTRACT(YEAR FROM s.endDate) > EXTRACT(YEAR FROM s.startDate) THEN 12 " + // Если подписка длится более года, делим на 12
+            "ELSE 1 " + // В остальных случаях оставляем без изменений
+            "END), 0) " +
+            "FROM Subscription s " +
+            "WHERE s.user.id = :userId " +
+            "AND s.startDate <= CURRENT_DATE " +
+            "AND s.endDate >= CURRENT_DATE")
     BigDecimal getMonthlyExpenses(@Param("userId") UUID userId);
+
+
 
     // 2️⃣ Общие годовые траты пользователя
     @Query("SELECT COALESCE(SUM(s.price), 0) FROM Subscription s " +
@@ -61,11 +86,6 @@ public interface SubscriptionRepository extends JpaRepository<Subscription, UUID
     // 7️⃣ Средняя стоимость подписки
     @Query("SELECT COALESCE(AVG(s.price), 0) FROM Subscription s WHERE s.user.id = :userId")
     BigDecimal getAverageSubscriptionCost(@Param("userId") UUID userId);
-
-    // 8️⃣ Расходы по категориям
-    @Query("SELECT s.category, SUM(s.price) FROM Subscription s " +
-            "WHERE s.user.id = :userId GROUP BY s.category")
-    List<Object[]> getExpensesByCategory(@Param("userId") UUID userId);
 
     // 9️⃣ Количество подписок по статусу
     @Query("SELECT s.status, COUNT(s) FROM Subscription s WHERE s.user.id = :userId GROUP BY s.status")

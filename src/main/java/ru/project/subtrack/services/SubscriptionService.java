@@ -9,18 +9,17 @@ import ru.project.subtrack.dto.SubscriptionDTO;
 import ru.project.subtrack.dto.SubscriptionResponseDTO;
 import ru.project.subtrack.exceptions.BusinessException;
 import ru.project.subtrack.models.Subscription;
-import ru.project.subtrack.models.SubscriptionCategory;
 import ru.project.subtrack.models.SubscriptionStatus;
+import ru.project.subtrack.models.Tag;
 import ru.project.subtrack.models.User;
 import ru.project.subtrack.repositories.SubscriptionRepository;
+import ru.project.subtrack.repositories.TagRepository;
 import ru.project.subtrack.repositories.UserRepository;
 import ru.project.subtrack.security.JwtService;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -28,18 +27,18 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class SubscriptionService {
 
+    private final TagRepository tagRepository;
     private final SubscriptionRepository subscriptionRepository;
     private final UserRepository userRepository;
     private final JwtService jwtService;
     private final EmailService emailService; // Добавляем сервис отправки email
 
     // ✅ Получить все подписки текущего пользователя (с фильтрацией)
-    public List<SubscriptionResponseDTO> getUserSubscriptions(String token, SubscriptionCategory category, SubscriptionStatus status, List<String> tags) {
+    public List<SubscriptionResponseDTO> getUserSubscriptions(String token, SubscriptionStatus status, List<String> tags) {
         UUID userId = UUID.fromString(jwtService.extractUserId(token));
         List<Subscription> subscriptions = subscriptionRepository.findByUserId(userId);
 
         return subscriptions.stream()
-                .filter(sub -> category == null || sub.getCategory() == category)
                 .filter(sub -> status == null || sub.getStatus() == status)
                 .filter(sub -> tags == null || tags.isEmpty() || sub.getTags().stream().anyMatch(tags::contains))
                 .map(this::mapToDTO)
@@ -53,29 +52,40 @@ public class SubscriptionService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new BusinessException("User not found"));
 
-        // Проверяем, нет ли уже подписки на этот сервис
+        // Проверка наличия подписки на этот сервис
         if (subscriptionRepository.findByServiceNameAndUserId(subscriptionData.getServiceName(), userId).isPresent()) {
             throw new BusinessException("Subscription to this service already exists");
         }
 
-        // Проверяем корректность дат
+        // Проверка корректности дат
         if (subscriptionData.getEndDate().isBefore(subscriptionData.getStartDate())) {
             throw new BusinessException("End date must be after start date");
         }
 
-        // Проверяем цену (должна быть положительной)
+        // Проверка цены
         if (subscriptionData.getPrice() == null || subscriptionData.getPrice().compareTo(BigDecimal.ZERO) <= 0) {
             throw new BusinessException("Price must be greater than zero");
         }
 
-        // Сохраняем подписку
+        // Получаем теги из базы данных по их именам
+
+        Set<Tag> tags = new HashSet<>();
+        if (subscriptionData.getTags() != null && !subscriptionData.getTags().isEmpty()) {
+            for (String tagName : subscriptionData.getTags()) {
+                Tag tag = tagRepository.findByName(tagName)
+                        .orElseThrow(() -> new BusinessException("Tag not found: " + tagName));
+                tags.add(tag);
+            }
+        }
+
+
+        // Создаём подписку
         Subscription subscription = Subscription.builder()
                 .serviceName(subscriptionData.getServiceName())
                 .startDate(subscriptionData.getStartDate())
                 .endDate(subscriptionData.getEndDate())
                 .price(subscriptionData.getPrice())
-                .category(subscriptionData.getCategory())
-                .tags(subscriptionData.getTags())
+                .tags(tags)  // Устанавливаем теги как сущности
                 .status(calculateStatus(subscriptionData.getEndDate()))
                 .user(user)
                 .build();
@@ -83,6 +93,7 @@ public class SubscriptionService {
         Subscription saved = subscriptionRepository.save(subscription);
         return mapToDTO(saved);
     }
+
 
     // ✅ Обновить подписку
     public SubscriptionResponseDTO updateSubscription(String token, UUID subscriptionId, SubscriptionDTO updatedData) {
@@ -94,6 +105,7 @@ public class SubscriptionService {
             throw new BusinessException("Access denied");
         }
 
+        // Проверки для обновления
         if (updatedData.getEndDate().isBefore(updatedData.getStartDate())) {
             throw new BusinessException("End date must be after start date");
         }
@@ -102,12 +114,22 @@ public class SubscriptionService {
             throw new BusinessException("Price must be greater than zero");
         }
 
+        // Обновление тегов из базы данных
+        Set<Tag> tags = new HashSet<>();
+        if (updatedData.getTags() != null && !updatedData.getTags().isEmpty()) {
+            for (String tagName : updatedData.getTags()) {
+                Tag tag = tagRepository.findByName(tagName)
+                        .orElseThrow(() -> new BusinessException("Tag not found: " + tagName));
+                tags.add(tag);
+            }
+        }
+
+        // Обновление подписки
         existing.setServiceName(updatedData.getServiceName());
         existing.setStartDate(updatedData.getStartDate());
         existing.setEndDate(updatedData.getEndDate());
         existing.setPrice(updatedData.getPrice());
-        existing.setCategory(updatedData.getCategory());
-        existing.setTags(updatedData.getTags());
+        existing.setTags(tags);
         existing.setStatus(calculateStatus(updatedData.getEndDate()));
 
         Subscription updated = subscriptionRepository.save(existing);
@@ -138,11 +160,18 @@ public class SubscriptionService {
         dto.setUserId(subscription.getUser().getId());
         dto.setUserEmail(subscription.getUser().getEmail());
         dto.setPrice(subscription.getPrice());
-        dto.setCategory(subscription.getCategory());
         dto.setStatus(subscription.getStatus());
-        dto.setTags(subscription.getTags());
+
+        // Преобразование Set<Tag> в List<String>
+        List<String> tagNames = subscription.getTags().stream()
+                .map(Tag::getName)  // Извлекаем имя из каждого тега
+                .collect(Collectors.toList());  // Собираем в список строк
+
+        dto.setTags(tagNames);  // Устанавливаем список имен тегов
+
         return dto;
     }
+
 
     // ✅ Определение статуса подписки
     private SubscriptionStatus calculateStatus(LocalDate endDate) {
@@ -169,29 +198,44 @@ public class SubscriptionService {
     }
 
 
-    // ✅ Полностью заменить теги
+    // Метод для проверки существующих тегов
+    private Set<Tag> validateAndGetTags(List<String> tagNames) {
+        List<Tag> existingTags = tagRepository.findByNameIn(tagNames);
+
+        if (existingTags.size() != tagNames.size()) {
+            // Если хотя бы один тег не найден, выбрасываем исключение
+            throw new IllegalArgumentException("Некоторые теги не существуют");
+        }
+
+        return new HashSet<>(existingTags);
+    }
+
+    // Замена тегов
     public SubscriptionResponseDTO replaceSubscriptionTags(String token, UUID subscriptionId, List<String> tags) {
         UUID userId = UUID.fromString(jwtService.extractUserId(token));
         Subscription subscription = getSubscriptionByIdAndUser(subscriptionId, userId);
 
-        subscription.setTags(tags); // Заменяем список тегов
+        Set<Tag> validatedTags = validateAndGetTags(tags);
+        subscription.setTags(validatedTags);
+
         Subscription updated = subscriptionRepository.save(subscription);
         return mapToDTO(updated);
     }
 
-    // ✅ Добавить теги, не удаляя существующие
+    // Добавление тегов
     public SubscriptionResponseDTO addSubscriptionTags(String token, UUID subscriptionId, List<String> newTags) {
         UUID userId = UUID.fromString(jwtService.extractUserId(token));
         Subscription subscription = getSubscriptionByIdAndUser(subscriptionId, userId);
 
-        // Добавляем новые теги, не дублируя старые
-        subscription.getTags().addAll(newTags.stream()
-                .filter(tag -> !subscription.getTags().contains(tag))
-                .toList());
+        Set<Tag> validatedTags = validateAndGetTags(newTags);
+
+        // Добавляем только новые теги
+        subscription.getTags().addAll(validatedTags);
 
         Subscription updated = subscriptionRepository.save(subscription);
         return mapToDTO(updated);
     }
+
 
     // ✅ Удалить определённые теги
     public SubscriptionResponseDTO removeSubscriptionTags(String token, UUID subscriptionId, List<String> tagsToRemove) {
@@ -236,6 +280,10 @@ public class SubscriptionService {
                 .map(this::mapToDTO)
                 .collect(Collectors.toList());
     }
+    public List<String> getAllTags() {
+        return tagRepository.findAllTags(); // Нужно создать этот метод в `TagRepository`
+    }
+
 
     // 🔥 Вспомогательный метод для поиска подписки
     private Subscription getSubscriptionByIdAndUser(UUID subscriptionId, UUID userId) {
@@ -250,7 +298,7 @@ public class SubscriptionService {
 
 
 
-    @Scheduled(cron = "0 22 21 * * *")
+    @Scheduled(cron = "0 34 14 * * *")
     @Transactional
     public void checkExpiringSubscriptions() {
         LocalDate threeDaysLater = LocalDate.now().plusDays(3);

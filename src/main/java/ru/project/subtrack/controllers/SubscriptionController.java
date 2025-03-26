@@ -6,9 +6,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import ru.project.subtrack.dto.SubscriptionDTO;
 import ru.project.subtrack.dto.SubscriptionResponseDTO;
-import ru.project.subtrack.exceptions.BusinessException;
 import ru.project.subtrack.services.SubscriptionService;
-import ru.project.subtrack.models.SubscriptionCategory;
 import ru.project.subtrack.models.SubscriptionStatus;
 
 import java.math.BigDecimal;
@@ -26,12 +24,11 @@ public class SubscriptionController {
     @GetMapping
     public ResponseEntity<List<SubscriptionResponseDTO>> getUserSubscriptions(
             @RequestHeader("Authorization") String authHeader,
-            @RequestParam(required = false) SubscriptionCategory category,
             @RequestParam(required = false) SubscriptionStatus status,
             @RequestParam(required = false) List<String> tags // ✅ добавил параметр tags
     ) {
         String token = extractToken(authHeader);
-        List<SubscriptionResponseDTO> subscriptions = subscriptionService.getUserSubscriptions(token, category, status, tags);
+        List<SubscriptionResponseDTO> subscriptions = subscriptionService.getUserSubscriptions(token, status, tags);
         return ResponseEntity.ok(subscriptions);
     }
 
@@ -110,6 +107,13 @@ public class SubscriptionController {
         return ResponseEntity.ok(updated);
     }
 
+    // ✅ Получить все доступные теги
+    @GetMapping("/tags")
+    public ResponseEntity<List<String>> getAllTags() {
+        List<String> tags = subscriptionService.getAllTags();
+        return ResponseEntity.ok(tags);
+    }
+
     // ✅ Удалить определённые теги (не все)
     @PatchMapping("/{id}/tags/remove")
     public ResponseEntity<SubscriptionResponseDTO> removeSubscriptionTags(
@@ -154,6 +158,14 @@ public class SubscriptionController {
         SubscriptionResponseDTO cheapest = subscriptionService.getCheapestSubscription(token)
                 .orElse(null);
         return ResponseEntity.ok(cheapest);
+    }
+
+    @GetMapping("/analytics/expiring-soon")
+    public ResponseEntity<List<SubscriptionResponseDTO>> getExpiringSubscriptions(
+            @RequestHeader("Authorization") String token,
+            @RequestParam("days") int days) {
+        List<SubscriptionResponseDTO> subscriptions = subscriptionService.getSubscriptionsExpiringSoon(token, days);
+        return ResponseEntity.ok(subscriptions);
     }
 
     // ✅ Вспомогательная функция для извлечения токена

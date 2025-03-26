@@ -1,7 +1,6 @@
 package ru.project.subtrack.dto;
 
 import lombok.Data;
-import ru.project.subtrack.models.SubscriptionCategory;
 import ru.project.subtrack.models.SubscriptionStatus;
 
 import java.math.BigDecimal;
@@ -18,7 +17,6 @@ public class SubscriptionResponseDTO {
     private LocalDate endDate;
     private UUID userId;
     private String userEmail;
-    private SubscriptionCategory category; // Категория подписки
     private SubscriptionStatus status; // Текущий статус
     private List<String> tags; // Теги
 
