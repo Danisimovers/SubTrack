@@ -150,27 +150,6 @@ public class SubscriptionService {
         subscriptionRepository.delete(existing);
     }
 
-    // ✅ Маппер в DTO
-    private SubscriptionResponseDTO mapToDTO(Subscription subscription) {
-        SubscriptionResponseDTO dto = new SubscriptionResponseDTO();
-        dto.setId(subscription.getId());
-        dto.setServiceName(subscription.getServiceName());
-        dto.setStartDate(subscription.getStartDate());
-        dto.setEndDate(subscription.getEndDate());
-        dto.setUserId(subscription.getUser().getId());
-        dto.setUserEmail(subscription.getUser().getEmail());
-        dto.setPrice(subscription.getPrice());
-        dto.setStatus(subscription.getStatus());
-
-        // Преобразование Set<Tag> в List<String>
-        List<String> tagNames = subscription.getTags().stream()
-                .map(Tag::getName)  // Извлекаем имя из каждого тега
-                .collect(Collectors.toList());  // Собираем в список строк
-
-        dto.setTags(tagNames);  // Устанавливаем список имен тегов
-
-        return dto;
-    }
 
 
     // ✅ Определение статуса подписки
@@ -208,6 +187,43 @@ public class SubscriptionService {
         }
 
         return new HashSet<>(existingTags);
+    }
+
+    // ✅ Получить расходы по тегам
+    public Map<String, BigDecimal> getExpensesByTags(String token) {
+        UUID userId = UUID.fromString(jwtService.extractUserId(token));
+        List<Subscription> subscriptions = subscriptionRepository.findByUserId(userId);
+
+        return subscriptions.stream()
+                .flatMap(sub -> sub.getTags().stream().map(tag -> Map.entry(tag.getName(), sub.getPrice())))
+                .collect(Collectors.toMap(
+                        Map.Entry::getKey,
+                        Map.Entry::getValue,
+                        BigDecimal::add
+                ));
+    }
+
+    // ✅ Получить общее количество подписок пользователя
+    public long getTotalSubscriptions(String token) {
+        UUID userId = UUID.fromString(jwtService.extractUserId(token));
+        return subscriptionRepository.countByUserId(userId);
+    }
+
+    // ✅ Получить количество подписок по статусу
+    public Map<SubscriptionStatus, Long> getSubscriptionsByStatus(String token) {
+        UUID userId = UUID.fromString(jwtService.extractUserId(token));
+        List<Object[]> statusCounts = subscriptionRepository.countByStatus(userId);
+
+        return statusCounts.stream()
+                .collect(Collectors.toMap(
+                        obj -> (SubscriptionStatus) obj[0], // Статус подписки
+                        obj -> (Long) obj[1] // Количество
+                ));
+    }
+    // ✅ Получить среднюю цену подписки
+    public BigDecimal getAverageSubscriptionPrice(String token) {
+        UUID userId = UUID.fromString(jwtService.extractUserId(token));
+        return subscriptionRepository.getAverageSubscriptionPrice(userId);
     }
 
     // Замена тегов
@@ -283,6 +299,31 @@ public class SubscriptionService {
     public List<String> getAllTags() {
         return tagRepository.findAllTags(); // Нужно создать этот метод в `TagRepository`
     }
+
+
+    // ✅ Маппер в DTO
+    private SubscriptionResponseDTO mapToDTO(Subscription subscription) {
+        SubscriptionResponseDTO dto = new SubscriptionResponseDTO();
+        dto.setId(subscription.getId());
+        dto.setServiceName(subscription.getServiceName());
+        dto.setStartDate(subscription.getStartDate());
+        dto.setEndDate(subscription.getEndDate());
+        dto.setUserId(subscription.getUser().getId());
+        dto.setUserEmail(subscription.getUser().getEmail());
+        dto.setPrice(subscription.getPrice());
+        dto.setStatus(subscription.getStatus());
+
+        // Преобразование Set<Tag> в List<String>
+        List<String> tagNames = subscription.getTags().stream()
+                .map(Tag::getName)  // Извлекаем имя из каждого тега
+                .collect(Collectors.toList());  // Собираем в список строк
+
+        dto.setTags(tagNames);  // Устанавливаем список имен тегов
+
+        return dto;
+    }
+
+
 
 
     // 🔥 Вспомогательный метод для поиска подписки

@@ -39,7 +39,15 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         }
 
         // Извлекаем токен
-        final String jwt = authHeader.substring(7);
+        final String jwt = authHeader.startsWith("Bearer ") ? authHeader.substring(7).trim() : authHeader;
+
+
+        System.out.println("JWT перед валидацией: " + jwt);
+        if (!jwtService.validateToken(jwt)) {
+            System.out.println("Токен не прошел валидацию!");
+            filterChain.doFilter(request, response);
+            return;
+        }
 
         // Проверяем токен
         if (!jwtService.validateToken(jwt)) {

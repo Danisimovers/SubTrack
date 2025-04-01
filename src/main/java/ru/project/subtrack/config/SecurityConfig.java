@@ -53,7 +53,7 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of("http://localhost:5177")); // тут указываешь фронт
+        configuration.setAllowedOrigins(List.of("http://localhost:5178")); // тут указываешь фронт
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*")); // или укажи конкретные, если знаешь
         configuration.setAllowCredentials(true); // если работаешь с токенами (Authorization)

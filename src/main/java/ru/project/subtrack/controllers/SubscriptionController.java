@@ -11,6 +11,7 @@ import ru.project.subtrack.models.SubscriptionStatus;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @RestController
@@ -82,6 +83,16 @@ public class SubscriptionController {
         SubscriptionResponseDTO updated = subscriptionService.updateSubscriptionStatus(token, id, status);
         return ResponseEntity.ok(updated);
     }
+
+    // ✅ Получить расходы по тегам
+    @GetMapping("/expenses/tags")
+    public ResponseEntity<Map<String, BigDecimal>> getExpensesByTags(
+            @RequestHeader("Authorization") String authHeader) {
+        String token = extractToken(authHeader);
+        Map<String, BigDecimal> expenses = subscriptionService.getExpensesByTags(token);
+        return ResponseEntity.ok(expenses);
+    }
+
 
     // ✅ Полностью заменить теги подписки
     @PatchMapping("/{id}/tags")
@@ -162,11 +173,36 @@ public class SubscriptionController {
 
     @GetMapping("/analytics/expiring-soon")
     public ResponseEntity<List<SubscriptionResponseDTO>> getExpiringSubscriptions(
-            @RequestHeader("Authorization") String token,
+            @RequestHeader("Authorization") String authHeader,
             @RequestParam("days") int days) {
+        String token = extractToken(authHeader);
         List<SubscriptionResponseDTO> subscriptions = subscriptionService.getSubscriptionsExpiringSoon(token, days);
         return ResponseEntity.ok(subscriptions);
     }
+
+    // ✅ Получить среднюю цену подписки
+    @GetMapping("/average-price")
+    public ResponseEntity<BigDecimal> getAverageSubscriptionPrice(@RequestHeader("Authorization") String authHeader) {
+        String token = extractToken(authHeader);
+        return ResponseEntity.ok(subscriptionService.getAverageSubscriptionPrice(token));
+    }
+
+    // ✅ Получить общее количество подписок
+    @GetMapping("/total")
+    public ResponseEntity<Long> getTotalSubscriptions(@RequestHeader("Authorization") String authHeader) {
+        String token = extractToken(authHeader);
+        return ResponseEntity.ok(subscriptionService.getTotalSubscriptions(token));
+    }
+
+    // ✅ Получить количество подписок по статусу
+    @GetMapping("/status/count")
+    public ResponseEntity<Map<SubscriptionStatus, Long>> getSubscriptionsByStatus(
+            @RequestHeader("Authorization") String authHeader) {
+        String token = extractToken(authHeader);
+        return ResponseEntity.ok(subscriptionService.getSubscriptionsByStatus(token));
+    }
+
+
 
     // ✅ Вспомогательная функция для извлечения токена
     private String extractToken(String authHeader) {

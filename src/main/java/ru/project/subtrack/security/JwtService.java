@@ -31,20 +31,29 @@ public class JwtService {
 
     // Извлечение userId из токена
     public String extractUserId(String token) {
-        return Jwts.parserBuilder()
-                .setSigningKey(getSigningKey())
-                .build()
-                .parseClaimsJws(token)
-                .getBody()
-                .get("userId", String.class);
+        System.out.println("Извлекаем userId из токена: " + token);
+        try {
+            return Jwts.parserBuilder()
+                    .setSigningKey(getSigningKey())
+                    .build()
+                    .parseClaimsJws(token)
+                    .getBody()
+                    .get("userId", String.class);
+        } catch (Exception e) {
+            System.out.println("Ошибка извлечения userId: " + e.getMessage());
+            return null;
+        }
     }
+
 
     // Проверка токена
     public boolean validateToken(String token) {
+        System.out.println("Проверяем токен: " + token);
         try {
             Jwts.parserBuilder().setSigningKey(getSigningKey()).build().parseClaimsJws(token);
             return true;
         } catch (JwtException e) {
+            System.out.println("Ошибка валидации JWT: " + e.getMessage());
             return false;
         }
     }
