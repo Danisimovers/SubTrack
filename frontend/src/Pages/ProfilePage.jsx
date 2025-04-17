@@ -163,13 +163,7 @@ const ProfilePage = () => {
                     </fieldset>
                 </form>
 
-                <button onClick={sendTestRequest} className="mt-4 w-full bg-green-500 text-white py-2 rounded-lg hover:bg-green-700 transition">
-                    Отправить тестовый запрос
-                </button>
 
-                <button onClick={sendTestSMS} className="mt-2 w-full bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-700 transition">
-                    Отправить тестовое SMS
-                </button>
             </div>
         </div>
     );
