@@ -146,7 +146,7 @@ const DashboardPage = () => {
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-blue-500 to-purple-600 p-8 text-white">
-            <h1 className="text-4xl font-bold mb-6">Личный кабинет</h1>
+            <h1 className="text-4xl font-bold mb-6">Управление подписками</h1>
             <h2 className="text-2xl font-semibold mb-4">Мои подписки</h2>
             {error && <div className="text-red-500 mb-4">{error}</div>}
             {loading ? (
